@@ -186,7 +186,47 @@
       background: linear-gradient(90deg, transparent, var(--gold-alpha-20), transparent);
     }
 
+    /* ─── Section Divider ───────────────────────────────── */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .section-divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--glass-border);
+    }
+
+    .section-divider-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section-divider-label i {
+      width: 13px;
+      height: 13px;
+      color: var(--gold);
+    }
+
     /* ─── Form Fields ───────────────────────────────────── */
+    .form-group {
+      margin-bottom: 28px;
+    }
+
+    .form-group:last-of-type {
+      margin-bottom: 0;
+    }
+
     .form-group label {
       display: flex;
       align-items: center;
@@ -214,6 +254,80 @@
       font-weight: 600;
       letter-spacing: 0.5px;
       text-transform: uppercase;
+    }
+
+    /* ─── Advisor Fields Grid ───────────────────────────── */
+    .advisor-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .advisor-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .input-field {
+      position: relative;
+    }
+
+    .input-field.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .input-field label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .input-field label i {
+      width: 13px;
+      height: 13px;
+      color: var(--gold-dim);
+      flex-shrink: 0;
+    }
+
+    .input-field input {
+      width: 100%;
+      background: rgba(10, 17, 32, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+    }
+
+    .input-field input::placeholder {
+      color: rgba(148, 163, 184, 0.4);
+      font-size: 0.85rem;
+    }
+
+    .input-field input:focus {
+      border-color: rgba(197, 160, 89, 0.45);
+      box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.08);
+      background: rgba(10, 17, 32, 0.8);
+    }
+
+    .input-field input:hover:not(:focus) {
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Required asterisk */
+    .required-star {
+      color: var(--gold);
+      font-size: 0.7rem;
+      margin-left: 2px;
     }
 
     /* ─── Upload Zone ───────────────────────────────────── */
@@ -731,6 +845,7 @@
       .card { padding: 32px 24px; }
       .header h1 { font-size: 1.7rem; }
       .upload-zone { padding: 32px 16px; }
+      .advisor-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -751,10 +866,76 @@
       <div class="card-glow"></div>
       <form id="uploadForm" novalidate>
 
-        <!-- PDF Upload -->
+        <!-- Advisor Details Section -->
+        <div class="section-divider">
+          <div class="section-divider-line"></div>
+          <div class="section-divider-label">
+            <i data-lucide="user-circle"></i>
+            Advisor Details
+          </div>
+          <div class="section-divider-line"></div>
+        </div>
+
+        <div class="advisor-fields">
+          <div class="input-field">
+            <label>
+              <i data-lucide="user"></i>
+              Advisor Name <span class="required-star">*</span>
+            </label>
+            <input
+              type="text"
+              id="advisorName"
+              name="advisorName"
+              placeholder="e.g. Jane Tan"
+              autocomplete="name"
+              required
+            >
+          </div>
+          <div class="input-field">
+            <label>
+              <i data-lucide="phone"></i>
+              Advisor Contact Number <span class="required-star">*</span>
+            </label>
+            <input
+              type="tel"
+              id="advisorContact"
+              name="advisorContact"
+              placeholder="e.g. +60 12 345 6789"
+              autocomplete="tel"
+              required
+            >
+          </div>
+          <div class="input-field">
+            <label>
+              <i data-lucide="mail"></i>
+              Advisor Email <span class="required-star">*</span>
+            </label>
+            <input
+              type="email"
+              id="advisorEmail"
+              name="advisorEmail"
+              placeholder="e.g. jane@agency.com"
+              autocomplete="email"
+              required
+            >
+          </div>
+        </div>
+
+        <!-- PDF Upload Section -->
+        <div class="section-divider" style="margin-bottom: 24px;">
+          <div class="section-divider-line"></div>
+          <div class="section-divider-label">
+            <i data-lucide="file-up"></i>
+            Quotation Documents
+          </div>
+          <div class="section-divider-line"></div>
+        </div>
+
         <div class="form-group">
           <label>
-            <i data-lucide="file-up"></i> Quotation Documents
+            <span style="display:flex;align-items:center;">
+              <i data-lucide="files"></i> Upload PDFs
+            </span>
             <span class="label-badge">Max 3</span>
           </label>
           <div class="upload-zone" id="uploadZone">
@@ -843,8 +1024,17 @@
     const stepDots = document.getElementById('stepDots');
     const newAnalysisBtn = document.getElementById('newAnalysisBtn');
 
+    const advisorNameInput = document.getElementById('advisorName');
+    const advisorContactInput = document.getElementById('advisorContact');
+    const advisorEmailInput = document.getElementById('advisorEmail');
+
     // ─── Initialise Lucide Icons ────────────────────────
     lucide.createIcons();
+
+    // ─── Advisor Field Validation ────────────────────────
+    [advisorNameInput, advisorContactInput, advisorEmailInput].forEach(input => {
+      input.addEventListener('input', validateForm);
+    });
 
     // ─── Upload Zone Events ─────────────────────────────
     uploadZone.addEventListener('click', () => {
@@ -934,7 +1124,11 @@
 
     // ─── Validation ─────────────────────────────────────
     function validateForm() {
-      submitBtn.disabled = uploadedFiles.length === 0;
+      const nameOk = advisorNameInput.value.trim().length > 0;
+      const contactOk = advisorContactInput.value.trim().length > 0;
+      const emailOk = advisorEmailInput.value.trim().length > 0;
+      const filesOk = uploadedFiles.length > 0;
+      submitBtn.disabled = !(nameOk && contactOk && emailOk && filesOk);
     }
 
     // ─── Toast ──────────────────────────────────────────
@@ -995,6 +1189,9 @@
     newAnalysisBtn.addEventListener('click', () => {
       completionOverlay.classList.remove('active');
       uploadedFiles = [];
+      advisorNameInput.value = '';
+      advisorContactInput.value = '';
+      advisorEmailInput.value = '';
       renderFileList();
       submitBtn.disabled = true;
     });
@@ -1005,8 +1202,19 @@
 
       if (uploadedFiles.length === 0) return;
 
+      const advisorName = advisorNameInput.value.trim();
+      const advisorContact = advisorContactInput.value.trim();
+      const advisorEmail = advisorEmailInput.value.trim();
+
+      if (!advisorName || !advisorContact || !advisorEmail) {
+        showToast('Please fill in all advisor details.');
+        return;
+      }
+
       const formData = new FormData();
-      formData.append('advisorName', 'Advisor');
+      formData.append('advisorName', advisorName);
+      formData.append('advisorContact', advisorContact);
+      formData.append('advisorEmail', advisorEmail);
       formData.append('clientName', 'Client');
       uploadedFiles.forEach((file, i) => {
         formData.append(`quotation_${i + 1}`, file);
