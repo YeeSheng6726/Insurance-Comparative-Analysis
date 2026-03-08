@@ -1140,13 +1140,17 @@
           filename = decodeURIComponent(filenameMatch[1].trim());
         }
 
-        // Download the binary ZIP returned directly from n8n
-        const blob = await response.blob();
+        // Detect content type from response, default to zip for binary
+        const contentType = response.headers.get('content-type') || 'application/octet-stream';
 
-        if (blob.size === 0) {
+        // Download the binary file returned directly from n8n
+        const arrayBuffer = await response.arrayBuffer();
+
+        if (arrayBuffer.byteLength === 0) {
           throw new Error('Received empty file from server.');
         }
 
+        const blob = new Blob([arrayBuffer], { type: contentType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1154,7 +1158,9 @@
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1000);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        a.remove();
+        URL.revokeObjectURL(url);
 
         stopProcessing();
         showCompletion();
