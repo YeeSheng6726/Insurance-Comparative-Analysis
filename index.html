@@ -1197,23 +1197,31 @@
         // Detect content type from response
         const contentType = response.headers.get('content-type') || '';
 
-        // If n8n returned JSON, it might be an error message instead of the expected binary
+        // If n8n returned JSON, it might be an error or a success JSON payload instead of binary
         if (contentType.includes('application/json')) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || errorData.error || 'Server returned JSON instead of a binary file.');
+          const jsonData = await response.json();
+          // If it's an error from n8n
+          if (!response.ok || jsonData.error || jsonData.message) {
+            throw new Error(jsonData.message || jsonData.error || 'Server returned an error.');
+          }
+          // If it's a successful JSON response, we shouldn't throw an error.
+          // We can just stop processing and show completion
+          console.log('Received JSON response instead of binary:', jsonData);
+          stopProcessing();
+          showCompletion();
+          return;
         }
 
         // Extract filename from Content-Disposition header, fallback to default
         const disposition = response.headers.get('content-disposition') || '';
         let filename = 'LI_Comparative_Analysis.zip';
 
-        // Handle standard filename="example.pdf"
+        // ... [keep filename parsing as is] ...
         const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
         if (filenameMatch && filenameMatch[1]) {
           filename = filenameMatch[1].replace(/['"]/g, '');
         }
 
-        // Check for utf-8 filename (RFC 5987) e.g., filename*=UTF-8''example.pdf
         const utf8Match = disposition.match(/filename\*=UTF-8''([^;\n]*)/i);
         if (utf8Match && utf8Match[1]) {
           filename = decodeURIComponent(utf8Match[1]);
@@ -1246,7 +1254,7 @@
         if (err.name === 'AbortError') {
           showToast('Request timed out after 5 minutes. Please try again.');
         } else {
-          showToast(`Something went wrong: ${err.message}`);
+          showToast('Something when wrong, Please try again after submitting the quotation');
         }
         console.error('Submission error:', err.name, err.message);
       }
