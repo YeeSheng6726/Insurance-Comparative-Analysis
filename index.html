@@ -803,7 +803,6 @@
   </div>
 
   <!-- ─── Completion Overlay ──────────────────────────── -->
-  <!-- FIX: Corrected class names to match CSS definitions -->
   <div class="completion-overlay" id="completionOverlay">
     <div class="completion-card">
       <div class="success-icon-wrap">
@@ -989,7 +988,7 @@
 
     // ─── Completion Screen ──────────────────────────────
     function showCompletion() {
-      lucide.createIcons(); // re-init icons inside the overlay
+      lucide.createIcons();
       completionOverlay.classList.add('active');
     }
 
@@ -999,25 +998,6 @@
       renderFileList();
       submitBtn.disabled = true;
     });
-
-    // ─── Auto-Download Helpers ──────────────────────────
-    function downloadBase64File(base64Data, filename, mimeType) {
-      const byteChars = atob(base64Data);
-      const byteNumbers = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) {
-        byteNumbers[i] = byteChars.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
 
     // ─── Form Submission ────────────────────────────────
     uploadForm.addEventListener('submit', async (e) => {
@@ -1051,35 +1031,32 @@
           throw new Error(`Server responded with ${response.status}`);
         }
 
-        // Safely parse JSON — if n8n returns non-JSON, we still show completion
-        let data = {};
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          try {
-            data = await response.json();
-          } catch {
-            console.warn('Response was not valid JSON, skipping download step.');
-          }
+        // Extract filename from Content-Disposition header, fallback to default
+        const disposition = response.headers.get('content-disposition') || '';
+        let filename = 'LI_Proposal.zip';
+        const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)["']?/i);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1].trim());
         }
+
+        // Download the binary ZIP returned directly from n8n
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
 
         stopProcessing();
-
-        // Auto-download returned files if present
-        if (data.html) {
-          downloadBase64File(data.html, 'Comparative_Analysis_Report.html', 'text/html');
-        }
-        if (data.pdf) {
-          downloadBase64File(data.pdf, 'Comparative_Analysis_Report.pdf', 'application/pdf');
-        }
-
-        // Always show completion if the HTTP request succeeded
         showCompletion();
 
       } catch (err) {
         clearTimeout(timeoutId);
         stopProcessing();
 
-        // Give a specific message if it was a timeout
         if (err.name === 'AbortError') {
           showToast('Request timed out after 5 minutes. Please try again.');
         } else {
