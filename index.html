@@ -1034,17 +1034,24 @@
 
       startProcessing();
 
+      // Allow up to 5 minutes for n8n to finish processing
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5 * 60 * 1000);
+
       try {
         const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
           body: formData,
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`Server responded with ${response.status}`);
         }
 
-        // FIX: Safely parse JSON — if n8n returns non-JSON, we still show completion
+        // Safely parse JSON — if n8n returns non-JSON, we still show completion
         let data = {};
         const contentType = response.headers.get('content-type') || '';
         if (contentType.includes('application/json')) {
@@ -1069,9 +1076,16 @@
         showCompletion();
 
       } catch (err) {
+        clearTimeout(timeoutId);
         stopProcessing();
-        showToast('Something went wrong. Please try again.');
-        console.error('Submission error:', err);
+
+        // Give a specific message if it was a timeout
+        if (err.name === 'AbortError') {
+          showToast('Request timed out after 5 minutes. Please try again.');
+        } else {
+          showToast(`Something went wrong: ${err.message}`);
+        }
+        console.error('Submission error:', err.name, err.message);
       }
     });
   </script>
