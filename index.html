@@ -1197,16 +1197,24 @@
         // Detect content type from response
         const contentType = response.headers.get('content-type') || '';
 
-        // If n8n returned JSON, it might be an error or a success JSON payload instead of binary
-        if (contentType.includes('application/json')) {
-          const jsonData = await response.json();
-          // If it's an error from n8n
-          if (!response.ok || jsonData.error || jsonData.message) {
-            throw new Error(jsonData.message || jsonData.error || 'Server returned an error.');
+        // If n8n returned JSON or text, it might be an error or a success confirmation (e.g., "Workflow started")
+        if (contentType.includes('application/json') || contentType.includes('text/plain')) {
+          let jsonData;
+          try {
+            jsonData = await response.json();
+          } catch (e) {
+            // If it can't parse as JSON, assume it's just plain text like "Workflow started"
+            jsonData = { message: "Workflow started" };
           }
-          // If it's a successful JSON response, we shouldn't throw an error.
-          // We can just stop processing and show completion
-          console.log('Received JSON response instead of binary:', jsonData);
+
+          // Only throw if NOT ok OR explicit error is present.
+          // Don't throw just because it has a 'message' field (e.g. n8n's "Workflow started")
+          if (!response.ok || jsonData.error) {
+            throw new Error(jsonData.error || jsonData.message || 'Server returned an error.');
+          }
+
+          // If it's a successful JSON/text response, we shouldn't throw an error.
+          console.log('Received response instead of binary:', jsonData);
           stopProcessing();
           showCompletion();
           return;
