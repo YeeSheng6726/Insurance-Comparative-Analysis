@@ -1033,22 +1033,34 @@
 
         // Extract filename from Content-Disposition header, fallback to default
         const disposition = response.headers.get('content-disposition') || '';
+        const contentType = response.headers.get('content-type') || '';
+        console.log('[Download] Status:', response.status);
+        console.log('[Download] Content-Type:', contentType);
+        console.log('[Download] Content-Disposition:', disposition);
+
         let filename = 'LI_Proposal.zip';
         const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)["']?/i);
         if (filenameMatch && filenameMatch[1]) {
           filename = decodeURIComponent(filenameMatch[1].trim());
         }
+        console.log('[Download] Using filename:', filename);
 
         // Download the binary ZIP returned directly from n8n
         const blob = await response.blob();
+        console.log('[Download] Blob size:', blob.size, 'type:', blob.type);
+
+        if (blob.size === 0) {
+          throw new Error('Received empty file from server.');
+        }
+
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1000);
 
         stopProcessing();
         showCompletion();
