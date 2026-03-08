@@ -863,7 +863,6 @@
             <p>or <span class="browse-link">browse from device</span></p>
             <div class="upload-formats">Supported format: PDF</div>
           </div>
-          <input type="file" id="fileInput" accept=".pdf,application/pdf" multiple hidden>
           <div class="file-list" id="fileList"></div>
           <div class="file-count" id="fileCount"></div>
         </div>
@@ -921,6 +920,9 @@
     </div>
   </div>
 
+  <!-- File input lives outside the form to prevent accidental form submission -->
+  <input type="file" id="fileInput" accept=".pdf,application/pdf" multiple hidden>
+
   <script>
     // ─── Configuration ──────────────────────────────────
     const WEBHOOK_URL = 'https://ys286.zeabur.app/webhook/12efe0ef-12b3-4ff7-bcbf-3c017aebad04';
@@ -946,7 +948,8 @@
     lucide.createIcons();
 
     // ─── Upload Zone Events ─────────────────────────────
-    uploadZone.addEventListener('click', () => {
+    uploadZone.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (uploadedFiles.length < MAX_FILES) fileInput.click();
     });
 
@@ -965,7 +968,8 @@
       handleFiles(e.dataTransfer.files);
     });
 
-    fileInput.addEventListener('change', () => {
+    fileInput.addEventListener('change', (e) => {
+      e.stopPropagation();
       handleFiles(fileInput.files);
       fileInput.value = '';
     });
