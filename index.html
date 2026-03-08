@@ -1190,41 +1190,36 @@
 
         clearTimeout(timeoutId);
 
-        if (!response.ok) {
-          throw new Error(`Server responded with ${response.status}`);
-        }
-
-        // Detect content type from response
         const contentType = response.headers.get('content-type') || '';
 
-        // If n8n returned JSON or text, it might be an error or a success confirmation (e.g., "Workflow started")
-        if (contentType.includes('application/json') || contentType.includes('text/plain')) {
+        // If n8n returned JSON or text, it could be an error or a success confirmation
+        if (contentType.includes('application/json') || contentType.includes('text/plain') || contentType.includes('text/html')) {
+          let textData = await response.text();
           let jsonData;
           try {
-            jsonData = await response.json();
+            jsonData = JSON.parse(textData);
           } catch (e) {
-            // If it can't parse as JSON, assume it's just plain text like "Workflow started"
-            jsonData = { message: "Workflow started" };
+            jsonData = { message: textData };
           }
 
-          // Only throw if NOT ok OR explicit error is present.
-          // Don't throw just because it has a 'message' field (e.g. n8n's "Workflow started")
           if (!response.ok || jsonData.error) {
-            throw new Error(jsonData.error || jsonData.message || 'Server returned an error.');
+            throw new Error(jsonData.error || jsonData.message || `Server error: ${response.status}`);
           }
 
-          // If it's a successful JSON/text response, we shouldn't throw an error.
           console.log('Received response instead of binary:', jsonData);
           stopProcessing();
           showCompletion();
           return;
         }
 
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+
         // Extract filename from Content-Disposition header, fallback to default
         const disposition = response.headers.get('content-disposition') || '';
         let filename = 'LI_Comparative_Analysis.zip';
 
-        // ... [keep filename parsing as is] ...
         const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
         if (filenameMatch && filenameMatch[1]) {
           filename = filenameMatch[1].replace(/['"]/g, '');
@@ -1241,6 +1236,7 @@
         if (blob.size === 0) {
           throw new Error('Received empty file from server.');
         }
+
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1262,7 +1258,7 @@
         if (err.name === 'AbortError') {
           showToast('Request timed out after 5 minutes. Please try again.');
         } else {
-          showToast('Something when wrong, Please try again after submitting the quotation');
+          showToast(`Error: ${err.message || 'Something went wrong. Please try again.'}`);
         }
         console.error('Submission error:', err.name, err.message);
       }
