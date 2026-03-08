@@ -187,7 +187,7 @@
     }
 
     /* ─── Form Fields ───────────────────────────────────── */
-    .form-group label, .form-group .field-label {
+    .form-group label {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -253,10 +253,6 @@
       opacity: 0.5;
       pointer-events: none;
       filter: grayscale(1);
-    }
-
-    .upload-zone * {
-      pointer-events: none;
     }
 
     .upload-zone .upload-icon {
@@ -757,18 +753,18 @@
 
         <!-- PDF Upload -->
         <div class="form-group">
-          <div class="field-label">
+          <label>
             <i data-lucide="file-up"></i> Quotation Documents
             <span class="label-badge">Max 3</span>
-          </div>
-          <label class="upload-zone" id="uploadZone" for="fileInput">
+          </label>
+          <div class="upload-zone" id="uploadZone">
             <div class="upload-zone-bg"></div>
             <i data-lucide="cloud-upload" class="upload-icon"></i>
             <h3>Drag & drop your files here</h3>
             <p>or <span class="browse-link">browse from device</span></p>
             <div class="upload-formats">Supported format: PDF</div>
-            <input type="file" id="fileInput" accept=".pdf,application/pdf" multiple hidden style="pointer-events:none;">
-          </label>
+          </div>
+          <input type="file" id="fileInput" accept=".pdf,application/pdf" multiple hidden>
           <div class="file-list" id="fileList"></div>
           <div class="file-count" id="fileCount"></div>
         </div>
@@ -852,7 +848,9 @@
     lucide.createIcons();
 
     // ─── Upload Zone Events ─────────────────────────────
-    // Click is handled natively by the <label for="fileInput"> in HTML
+    uploadZone.addEventListener('click', () => {
+      if (uploadedFiles.length < MAX_FILES) fileInput.click();
+    });
 
     uploadZone.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -1002,8 +1000,15 @@
       submitBtn.disabled = true;
     });
 
-    // ─── Download ZIP blob from n8n ─────────────────────
-    function downloadBlob(blob, filename) {
+    // ─── Auto-Download Helpers ──────────────────────────
+    function downloadBase64File(base64Data, filename, mimeType) {
+      const byteChars = atob(base64Data);
+      const byteNumbers = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNumbers[i] = byteChars.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1046,25 +1051,35 @@
           throw new Error(`Server responded with ${response.status}`);
         }
 
-        // n8n returns the ZIP as binary — read as blob and trigger download
-        const blob = await response.blob();
-
-        // Use filename from Content-Disposition header if n8n sends it,
-        // otherwise fall back to the known n8n filename pattern
-        const disposition = response.headers.get('content-disposition') || '';
-        const match = disposition.match(/filename[^;=
-]*=["']?([^"';
-]+)["']?/);
-        const filename = match ? match[1].trim() : 'Client_LI_Proposal.zip';
+        // Safely parse JSON — if n8n returns non-JSON, we still show completion
+        let data = {};
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          try {
+            data = await response.json();
+          } catch {
+            console.warn('Response was not valid JSON, skipping download step.');
+          }
+        }
 
         stopProcessing();
-        downloadBlob(blob, filename);
+
+        // Auto-download returned files if present
+        if (data.html) {
+          downloadBase64File(data.html, 'Comparative_Analysis_Report.html', 'text/html');
+        }
+        if (data.pdf) {
+          downloadBase64File(data.pdf, 'Comparative_Analysis_Report.pdf', 'application/pdf');
+        }
+
+        // Always show completion if the HTTP request succeeded
         showCompletion();
 
       } catch (err) {
         clearTimeout(timeoutId);
         stopProcessing();
 
+        // Give a specific message if it was a timeout
         if (err.name === 'AbortError') {
           showToast('Request timed out after 5 minutes. Please try again.');
         } else {
