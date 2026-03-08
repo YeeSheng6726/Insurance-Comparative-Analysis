@@ -727,6 +727,63 @@
       to { opacity: 1; transform: translateX(0); }
     }
 
+    /* ─── Text Inputs ───────────────────────────────────── */
+    .input-field {
+      width: 100%;
+      background: rgba(10, 17, 32, 0.5);
+      border: 1.5px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: border-color 0.25s, box-shadow 0.25s;
+      outline: none;
+    }
+
+    .input-field::placeholder {
+      color: var(--text-muted);
+    }
+
+    .input-field:focus {
+      border-color: var(--gold-dim);
+      box-shadow: 0 0 0 3px var(--gold-alpha-10);
+    }
+
+    .advisor-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .field-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .field-label i {
+      width: 16px;
+      height: 16px;
+      color: var(--gold);
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--glass-border);
+      margin: 0 0 28px 0;
+    }
+
     @media (max-width: 600px) {
       .card { padding: 32px 24px; }
       .header h1 { font-size: 1.7rem; }
@@ -751,6 +808,48 @@
       <div class="card-glow"></div>
       <form id="uploadForm" novalidate>
 
+        <!-- Advisor Details -->
+        <div class="advisor-fields">
+          <div class="field-row">
+            <label class="field-label" for="advisorName">
+              <i data-lucide="user"></i> Advisor Name
+            </label>
+            <input
+              type="text"
+              id="advisorName"
+              class="input-field"
+              placeholder="e.g. Jane Lim"
+              autocomplete="name"
+            >
+          </div>
+          <div class="field-row">
+            <label class="field-label" for="advisorPhone">
+              <i data-lucide="phone"></i> Advisor Contact Number
+            </label>
+            <input
+              type="tel"
+              id="advisorPhone"
+              class="input-field"
+              placeholder="e.g. +60 12-345 6789"
+              autocomplete="tel"
+            >
+          </div>
+          <div class="field-row">
+            <label class="field-label" for="advisorEmail">
+              <i data-lucide="mail"></i> Advisor Email
+            </label>
+            <input
+              type="email"
+              id="advisorEmail"
+              class="input-field"
+              placeholder="e.g. jane@company.com"
+              autocomplete="email"
+            >
+          </div>
+        </div>
+
+        <hr class="section-divider">
+
         <!-- PDF Upload -->
         <div class="form-group">
           <label>
@@ -764,7 +863,6 @@
             <p>or <span class="browse-link">browse from device</span></p>
             <div class="upload-formats">Supported format: PDF</div>
           </div>
-          <input type="file" id="fileInput" accept=".pdf,application/pdf" multiple hidden>
           <div class="file-list" id="fileList"></div>
           <div class="file-count" id="fileCount"></div>
         </div>
@@ -822,6 +920,9 @@
     </div>
   </div>
 
+  <!-- File input lives outside the form to prevent accidental form submission -->
+  <input type="file" id="fileInput" accept=".pdf,application/pdf" multiple hidden>
+
   <script>
     // ─── Configuration ──────────────────────────────────
     const WEBHOOK_URL = 'https://ys286.zeabur.app/webhook/12efe0ef-12b3-4ff7-bcbf-3c017aebad04';
@@ -847,7 +948,8 @@
     lucide.createIcons();
 
     // ─── Upload Zone Events ─────────────────────────────
-    uploadZone.addEventListener('click', () => {
+    uploadZone.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (uploadedFiles.length < MAX_FILES) fileInput.click();
     });
 
@@ -866,7 +968,8 @@
       handleFiles(e.dataTransfer.files);
     });
 
-    fileInput.addEventListener('change', () => {
+    fileInput.addEventListener('change', (e) => {
+      e.stopPropagation();
       handleFiles(fileInput.files);
       fileInput.value = '';
     });
@@ -1006,7 +1109,9 @@
       if (uploadedFiles.length === 0) return;
 
       const formData = new FormData();
-      formData.append('advisorName', 'Advisor');
+      formData.append('advisorName', document.getElementById('advisorName').value.trim());
+      formData.append('advisorPhone', document.getElementById('advisorPhone').value.trim());
+      formData.append('advisorEmail', document.getElementById('advisorEmail').value.trim());
       formData.append('clientName', 'Client');
       uploadedFiles.forEach((file, i) => {
         formData.append(`quotation_${i + 1}`, file);
@@ -1039,13 +1144,17 @@
           filename = decodeURIComponent(filenameMatch[1].trim());
         }
 
-        // Download the binary ZIP returned directly from n8n
-        const blob = await response.blob();
+        // Detect content type from response, default to zip for binary
+        const contentType = response.headers.get('content-type') || 'application/octet-stream';
 
-        if (blob.size === 0) {
+        // Download the binary file returned directly from n8n
+        const arrayBuffer = await response.arrayBuffer();
+
+        if (arrayBuffer.byteLength === 0) {
           throw new Error('Received empty file from server.');
         }
 
+        const blob = new Blob([arrayBuffer], { type: contentType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1053,7 +1162,9 @@
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1000);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        a.remove();
+        URL.revokeObjectURL(url);
 
         stopProcessing();
         showCompletion();
