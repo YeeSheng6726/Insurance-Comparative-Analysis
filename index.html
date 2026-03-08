@@ -91,9 +91,17 @@
     }
 
     @keyframes ambientDrift {
-      0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(30px, 50px) scale(1.05); }
-      100% { transform: translate(-20px, 30px) scale(0.95); }
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      50% {
+        transform: translate(30px, 50px) scale(1.05);
+      }
+
+      100% {
+        transform: translate(-20px, 30px) scale(0.95);
+      }
     }
 
     /* ─── Layout ────────────────────────────────────────── */
@@ -109,8 +117,15 @@
     }
 
     @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* ─── Header ────────────────────────────────────────── */
@@ -326,8 +341,15 @@
     }
 
     @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     .file-item-icon {
@@ -489,8 +511,15 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; backdrop-filter: blur(0px); }
-      to { opacity: 1; backdrop-filter: blur(16px); }
+      from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+      }
+
+      to {
+        opacity: 1;
+        backdrop-filter: blur(16px);
+      }
     }
 
     /* Progress ring */
@@ -530,9 +559,20 @@
     }
 
     @keyframes ringPulse {
-      0% { stroke-dashoffset: 377; transform: rotate(0deg); }
-      50% { stroke-dashoffset: 80; transform: rotate(180deg); }
-      100% { stroke-dashoffset: 377; transform: rotate(360deg); }
+      0% {
+        stroke-dashoffset: 377;
+        transform: rotate(0deg);
+      }
+
+      50% {
+        stroke-dashoffset: 80;
+        transform: rotate(180deg);
+      }
+
+      100% {
+        stroke-dashoffset: 377;
+        transform: rotate(360deg);
+      }
     }
 
     .scan-anim {
@@ -569,9 +609,21 @@
     }
 
     @keyframes scanMove {
-      0%, 100% { top: -5%; opacity: 0; }
-      10%, 90% { opacity: 1; }
-      50% { top: 100%; }
+
+      0%,
+      100% {
+        top: -5%;
+        opacity: 0;
+      }
+
+      10%,
+      90% {
+        opacity: 1;
+      }
+
+      50% {
+        top: 100%;
+      }
     }
 
     .processing-status {
@@ -646,8 +698,15 @@
     }
 
     @keyframes popIn {
-      0% { opacity: 0; transform: scale(0.5); }
-      100% { opacity: 1; transform: scale(1); }
+      0% {
+        opacity: 0;
+        transform: scale(0.5);
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     .completion-card h2 {
@@ -723,8 +782,15 @@
     }
 
     @keyframes slideLeft {
-      from { opacity: 0; transform: translateX(40px); }
-      to { opacity: 1; transform: translateX(0); }
+      from {
+        opacity: 0;
+        transform: translateX(40px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
 
     /* ─── Text Inputs ───────────────────────────────────── */
@@ -785,9 +851,17 @@
     }
 
     @media (max-width: 600px) {
-      .card { padding: 32px 24px; }
-      .header h1 { font-size: 1.7rem; }
-      .upload-zone { padding: 32px 16px; }
+      .card {
+        padding: 32px 24px;
+      }
+
+      .header h1 {
+        font-size: 1.7rem;
+      }
+
+      .upload-zone {
+        padding: 32px 16px;
+      }
     }
   </style>
 </head>
@@ -814,37 +888,21 @@
             <label class="field-label" for="advisorName">
               <i data-lucide="user"></i> Advisor Name
             </label>
-            <input
-              type="text"
-              id="advisorName"
-              class="input-field"
-              placeholder="e.g. Jane Lim"
-              autocomplete="name"
-            >
+            <input type="text" id="advisorName" class="input-field" placeholder="e.g. Jane Lim" autocomplete="name">
           </div>
           <div class="field-row">
             <label class="field-label" for="advisorPhone">
               <i data-lucide="phone"></i> Advisor Contact Number
             </label>
-            <input
-              type="tel"
-              id="advisorPhone"
-              class="input-field"
-              placeholder="e.g. +60 12-345 6789"
-              autocomplete="tel"
-            >
+            <input type="tel" id="advisorPhone" class="input-field" placeholder="e.g. +60 12-345 6789"
+              autocomplete="tel">
           </div>
           <div class="field-row">
             <label class="field-label" for="advisorEmail">
               <i data-lucide="mail"></i> Advisor Email
             </label>
-            <input
-              type="email"
-              id="advisorEmail"
-              class="input-field"
-              placeholder="e.g. jane@company.com"
-              autocomplete="email"
-            >
+            <input type="email" id="advisorEmail" class="input-field" placeholder="e.g. jane@company.com"
+              autocomplete="email">
           </div>
         </div>
 
@@ -1136,25 +1194,37 @@
           throw new Error(`Server responded with ${response.status}`);
         }
 
+        // Detect content type from response
+        const contentType = response.headers.get('content-type') || '';
+
+        // If n8n returned JSON, it might be an error message instead of the expected binary
+        if (contentType.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || errorData.error || 'Server returned JSON instead of a binary file.');
+        }
+
         // Extract filename from Content-Disposition header, fallback to default
         const disposition = response.headers.get('content-disposition') || '';
-        let filename = 'LI_Proposal.zip';
-        const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)["']?/i);
+        let filename = 'LI_Comparative_Analysis.zip';
+
+        // Handle standard filename="example.pdf"
+        const filenameMatch = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
         if (filenameMatch && filenameMatch[1]) {
-          filename = decodeURIComponent(filenameMatch[1].trim());
+          filename = filenameMatch[1].replace(/['"]/g, '');
         }
 
-        // Detect content type from response, default to zip for binary
-        const contentType = response.headers.get('content-type') || 'application/octet-stream';
+        // Check for utf-8 filename (RFC 5987) e.g., filename*=UTF-8''example.pdf
+        const utf8Match = disposition.match(/filename\*=UTF-8''([^;\n]*)/i);
+        if (utf8Match && utf8Match[1]) {
+          filename = decodeURIComponent(utf8Match[1]);
+        }
 
         // Download the binary file returned directly from n8n
-        const arrayBuffer = await response.arrayBuffer();
+        const blob = await response.blob();
 
-        if (arrayBuffer.byteLength === 0) {
+        if (blob.size === 0) {
           throw new Error('Received empty file from server.');
         }
-
-        const blob = new Blob([arrayBuffer], { type: contentType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
