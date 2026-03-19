@@ -1160,31 +1160,37 @@
       submitBtn.disabled = true;
     });
 
+
     // ─── Form Submission ────────────────────────────────
     uploadForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       if (uploadedFiles.length === 0) return;
 
+      startProcessing();
+
+      // Build a proper multipart/form-data payload.
+      // DO NOT set Content-Type manually — let the browser set it
+      // automatically so it includes the correct boundary string.
+      // n8n will then place each PDF into $binary.quotation_1 / _2 / _3
+      // which the Split Out node can iterate over.
       const formData = new FormData();
       formData.append('advisorName', document.getElementById('advisorName').value.trim());
       formData.append('advisorPhone', document.getElementById('advisorPhone').value.trim());
       formData.append('advisorEmail', document.getElementById('advisorEmail').value.trim());
       formData.append('clientName', 'Client');
-      // Explicitly reconstruct each file as a typed Blob so the MIME type
-      // (application/pdf) is always preserved in the multipart payload.
-      // Without this, some environments strip the type, causing n8n to
-      // receive the binary part without a recognisable content type.
+
       uploadedFiles.forEach((file, i) => {
+        // Wrap in a new Blob to guarantee MIME type = application/pdf.
+        // Pass the original filename so n8n binary metadata is correct.
         const blob = new Blob([file], { type: 'application/pdf' });
         formData.append(`quotation_${i + 1}`, blob, file.name);
       });
 
-      // Debug: log what we're about to send so you can verify in DevTools.
-      console.log('[Upload] Sending', uploadedFiles.length, 'file(s) to webhook:');
-      uploadedFiles.forEach((f, i) => console.log(`  quotation_${i + 1}:`, f.name, f.size, 'bytes', f.type));
-
-      startProcessing();
+      console.log(
+        '[Upload] Sending multipart/form-data —',
+        uploadedFiles.map((f, i) => `quotation_${i + 1}: ${f.name} (${f.size} bytes)`)
+      );
 
       // Allow up to 5 minutes for n8n to finish processing
       const controller = new AbortController();
@@ -1193,6 +1199,7 @@
       try {
         const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
+          // No Content-Type header — browser sets multipart/form-data + boundary
           body: formData,
           signal: controller.signal,
         });
