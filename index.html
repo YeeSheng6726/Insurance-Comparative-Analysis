@@ -1171,9 +1171,18 @@
       formData.append('advisorPhone', document.getElementById('advisorPhone').value.trim());
       formData.append('advisorEmail', document.getElementById('advisorEmail').value.trim());
       formData.append('clientName', 'Client');
+      // Explicitly reconstruct each file as a typed Blob so the MIME type
+      // (application/pdf) is always preserved in the multipart payload.
+      // Without this, some environments strip the type, causing n8n to
+      // receive the binary part without a recognisable content type.
       uploadedFiles.forEach((file, i) => {
-        formData.append(`quotation_${i + 1}`, file);
+        const blob = new Blob([file], { type: 'application/pdf' });
+        formData.append(`quotation_${i + 1}`, blob, file.name);
       });
+
+      // Debug: log what we're about to send so you can verify in DevTools.
+      console.log('[Upload] Sending', uploadedFiles.length, 'file(s) to webhook:');
+      uploadedFiles.forEach((f, i) => console.log(`  quotation_${i + 1}:`, f.name, f.size, 'bytes', f.type));
 
       startProcessing();
 
@@ -1192,7 +1201,9 @@
 
         const contentType = response.headers.get('content-type') || '';
 
-        // If n8n returned JSON or text, it could be an error or a success confirmation
+        // A successful n8n run ALWAYS returns a binary zip file.
+        // Any JSON/text response means the workflow errored (e.g. Split Out failed,
+        // Gemini quota exceeded, etc.) — surface it as an error instead of "Complete".
         if (contentType.includes('application/json') || contentType.includes('text/plain') || contentType.includes('text/html')) {
           let textData = await response.text();
           let jsonData;
@@ -1201,15 +1212,9 @@
           } catch (e) {
             jsonData = { message: textData };
           }
-
-          if (!response.ok || jsonData.error) {
-            throw new Error(jsonData.error || jsonData.message || `Server error: ${response.status}`);
-          }
-
-          console.log('Received response instead of binary:', jsonData);
-          stopProcessing();
-          showCompletion();
-          return;
+          const errMsg = jsonData.error || jsonData.message || JSON.stringify(jsonData) || `Server error: ${response.status}`;
+          console.error('n8n returned non-binary response:', jsonData);
+          throw new Error(`Workflow error: ${errMsg}`);
         }
 
         if (!response.ok) {
