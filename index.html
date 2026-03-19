@@ -1181,10 +1181,11 @@
       formData.append('clientName', 'Client');
 
       uploadedFiles.forEach((file, i) => {
-        // Wrap in a new Blob to guarantee MIME type = application/pdf.
-        // Pass the original filename so n8n binary metadata is correct.
+        // Field name 'file' matches the "Field Name for Binary Data" setting
+        // in the n8n Webhook node options — this is what tells n8n to extract
+        // these parts as $binary instead of treating them as JSON body text.
         const blob = new Blob([file], { type: 'application/pdf' });
-        formData.append(`quotation_${i + 1}`, blob, file.name);
+        formData.append('file', blob, file.name);
       });
 
       console.log(
